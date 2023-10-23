@@ -8,88 +8,91 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          ref: main # Replace with the desired branch name
+
+      - name: Install Node.js and Dependencies
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14' # Use the Node.js version you need
+
+      - name: Install Dependencies
+        run: |
+          npm install axios fs
+        working-directory: ${{ github.workspace }}
+
       - name: Debug
         run: |
           echo "Contents of the workspace:"
-          ls -la ${{ github.workspace }}
+          ls -la
+          cat README.md
+        working-directory: ${{ github.workspace }}
 
-      - name: Check for README file
+      - name: Update README
         run: |
-          if [ ! -f "README.md" ]; then
-            echo "README file not found"
-            exit 1
-          else
-            echo "README file found"
-          fi
+          const axios = require("axios");
+          const fs = require("fs");
+          const os = require("os");
 
-      - name: Install dependencies
-        run: |
-          npm install axios fs
+          const owner = "varunrmantri23";
+          const repo = "workflows";
+          const filePath = "./README.md";
 
-      - name: Run the script
-        uses: actions/github-script@v5
-        with:
-          script: |
-            const axios = require("axios");
-            const fs = require("fs");
-            const os = require("os");
+          const fetchDataAndUpdateReadme = async () => {
+            try {
+              // Fetch contributors' data from varunrmantri23/workflows
+              const response = await axios.get(
+                `https://api.github.com/repos/${owner}/${repo}/contributors`
+              );
+              const contributors = response.data;
 
-            const owner = "varunrmantri23";
-            const repo = "workflows";
-            const filePath = "./README.md";
+              // Build a new list of contributors with images and names
+              let contributorsList = "## Contributors to this Repository\n\n";
+              contributors.forEach((contributor) => {
+                contributorsList += `<a href="https://github.com/${contributor.login}" target="_blank"><img src="${contributor.avatar_url}" alt="${contributor.login}" style="border-radius: 50%; width: 50px; height: 50px;"></a>\n`;
+              });
 
-            const fetchDataAndUpdateReadme = async () => {
-              try {
-                // Fetch contributors' data from varunrmantri23/workflows
-                const response = await axios.get(
-                  `https://api.github.com/repos/${owner}/${repo}/contributors`
-                );
-                const contributors = response.data;
+              // Read your existing README content with consistent line endings
+              let readmeContent = fs
+                .readFileSync(filePath, "utf8")
+                .replace(/\r\n/g, "\n");
 
-                // Build a new list of contributors with images and names
-                let contributorsList = "## Contributors to this Repository\n\n";
-                contributors.forEach((contributor) => {
-                  contributorsList += `<a href="https://github.com/${contributor.login}" target="_blank"><img src="${contributor.avatar_url}" alt="${contributor.login}" style="border-radius: 50%; width: 50px; height: 50px;"></a>\n`;
-                });
+              // Check if the "Contributors to this Repository" section already exists
+              const sectionExists = readmeContent.includes(
+                "## Contributors to this Repository"
+              );
 
-                // Read your existing README content with consistent line endings
-                let readmeContent = fs
-                  .readFileSync(filePath, "utf8")
-                  .replace(/\r\n/g, "\n");
-
-                // Check if the "Contributors to this Repository" section already exists
-                const sectionExists = readmeContent.includes(
+              if (sectionExists) {
+                // If the section exists, replace it with the new contributors
+                const startIndex = readmeContent.indexOf(
                   "## Contributors to this Repository"
                 );
-
-                if (sectionExists) {
-                  // If the section exists, replace it with the new contributors
-                  const startIndex = readmeContent.indexOf(
-                    "## Contributors to this Repository"
-                  );
-                  const endIndex = readmeContent.indexOf("##", startIndex + 1);
-                  readmeContent =
-                    readmeContent.slice(0, startIndex) +
-                    contributorsList +
-                    readmeContent.slice(endIndex);
-                } else {
-                  // If the section doesn't exist, simply add it with the new contributors
-                  readmeContent += contributorsList;
-                }
-
-                // Write the updated content with consistent line endings
-                fs.writeFileSync(
-                  filePath,
-                  readmeContent.replace(/\n/g, os.EOL),
-                  "utf8"
-                );
-                console.log("Updated Readme.md with new contributors section");
-              } catch (error) {
-                console.error("Error:", error);
+                const endIndex = readmeContent.indexOf("##", startIndex + 1);
+                readmeContent =
+                  readmeContent.slice(0, startIndex) +
+                  contributorsList +
+                  readmeContent.slice(endIndex);
+              } else {
+                // If the section doesn't exist, simply add it with the new contributors
+                readmeContent += contributorsList;
               }
-            };
 
-            fetchDataAndUpdateReadme();
+              // Write the updated content with consistent line endings
+              fs.writeFileSync(
+                filePath,
+                readmeContent.replace(/\n/g, os.EOL),
+                "utf8"
+              );
+              console.log("Updated Readme.md with new contributors section");
+            } catch (error) {
+              console.error("Error:", error);
+            }
+          };
+
+          fetchDataAndUpdateReadme();
+        working-directory: ${{ github.workspace }}
 
       - name: Commit and Push Changes
         run: |
@@ -97,4 +100,5 @@ jobs:
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git add .
           git commit -m "Update README and dynamic content"
-          git push origin HEAD:main # Replace 'main' with your branch name if different || { echo "Git push failed"; exit 0; }
+          git push origin HEAD:main # Replace 'main' with your branch name if different
+        working-directory: ${{ github.workspace }}
