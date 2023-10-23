@@ -31,7 +31,7 @@ jobs:
 
             const owner = "varunrmantri23";
             const repo = "workflows";
-            const filePath = "../README.md";
+            const filePath = "./README.md";
 
             const fetchDataAndUpdateReadme = async () => {
               try {
