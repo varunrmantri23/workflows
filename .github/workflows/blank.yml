@@ -8,6 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug
+        run: |
+          echo "Contents of the workspace:"
+          ls -la ${{ github.workspace }}
+
       - name: Check for README file
         run: |
           if [ ! -f "README.md" ]; then
